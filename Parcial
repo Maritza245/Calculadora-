@@ -1,0 +1,157 @@
+section .data
+msg1 db 'Ingrese el Primer Numero:', 0
+msg2 db 'Ingrese el Segundo Numero:', 0
+msg3 db 'Seleccione la Operacion (1: Sumar, 2: Restar, 3: Multiplicar, 4: Dividir):', 0
+result_msg db 'El Resultado es: ', 0
+newline db 10, 0
+
+section .bss
+num1 resb 4
+num2 resb 4
+operacion resb 1
+resultado resb 12
+
+section .text
+global _start
+
+_start:
+mov rax, 1
+mov rdi, 1
+mov rsi, msg1
+mov rdx, 26
+int 0x80
+mov rax, 0
+mov rdi, 0
+lea rsi, [num1]
+mov rdx, 4
+int 0x80
+
+mov rax, 1
+mov rdi, 1
+mov rsi, msg2
+mov rdx, 26
+int 0x80
+mov rax, 0
+mov rdi, 0
+lea rsi, [num2]
+mov rdx, 4
+int 0x80
+mov rax, 1
+mov rdi, 1
+mov rsi, msg3
+mov rdx, 65
+int 0x80
+mov rax, 0
+mov rdi, 0
+lea rsi, [operacion]
+mov rdx, 1
+int 0x80
+
+call convertir_numero
+mov eax, dword [num1]
+mov ebx, dword [num2]
+movzx ecx, byte [operacion]
+
+cmp ecx, '1'
+je sumar
+cmp ecx, '2'
+je restar
+cmp ecx, '3'
+je multiplicar
+cmp ecx, '4'
+je dividir
+jmp exit
+
+sumar:
+add eax, ebx
+jmp mostrar_resultado
+
+restar:
+sub eax, ebx
+jmp mostrar_resultado
+
+multiplicar:
+imul eax, ebx
+jmp mostrar_resultado
+
+dividir:
+xor edx, edx
+div ebx
+jmp mostrar_resultado
+
+mostrar_resultado:
+mov rax, 1
+mov rdi, 1
+mov rsi, result_msg
+mov rdx, 16
+int 0x80
+
+call convertir_a_cadena
+mov rax, 1
+mov rdi, 1
+lea rsi, [resultado]
+mov rdx, r8
+int 0x80
+mov rax, 1
+mov rdi, 1
+lea rsi, [newline]
+mov rdx, 1
+int 0x80
+exit:
+mov rax, 60
+xor rdi, rdi
+int 0x80
+
+convertir_numero:
+mov rax, 0
+lea rsi, [num1]
+mov rcx, 4
+.convertir_num1:
+movzx rdx, byte [rsi]
+cmp rdx, 10
+je .fin_convertir_num1
+sub rdx, '0'
+imul rax, rax, 10
+add rax, rdx
+inc rsi
+loop .convertir_num1
+.fin_convertir_num1:
+mov dword [num1], eax
+mov rax, 0
+lea rsi, [num2]
+mov rcx, 4
+.convertir_num2:
+movzx rdx, byte [rsi]
+cmp rdx, 10
+je .fin_convertir_num2
+sub rdx, '0'
+imul rax, rax, 10
+add rax, rdx
+inc rsi
+loop .convertir_num2
+
+.fin_convertir_num2:
+mov dword [num2], eax
+ret
+
+convertir_a_cadena:
+mov rsi, resultado
+mov rbx, 10
+mov rcx, 0
+test rdi, rdi
+jnz .convertir_loop
+
+mov byte [resultado], '0'
+mov r8, 1
+ret
+.convertir_loop:
+xor rdx, rdx
+div rbx
+add dl, '0'
+dec rsi
+mov [rsi], dl
+inc rcx
+test eax, eax
+jnz .convertir_loop
+mov r8, rcx
+ret
